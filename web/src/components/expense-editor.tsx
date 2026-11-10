@@ -41,6 +41,22 @@ export function ExpenseEditor({
   const [currency, setCurrency] = useState<Currency>(
     expense?.currency ?? data.trip.currency,
   );
+  const currencyChoices = useMemo(
+    () => [
+      ...new Set<Currency>([
+        data.trip.currency,
+        data.trip.home_currency,
+        "CNY",
+        ...(expense ? [expense.currency] : []),
+      ]),
+    ],
+    [data.trip.currency, data.trip.home_currency, expense?.currency],
+  );
+  const canSwitchCurrency = currencyChoices.length > 1;
+  const nextCurrency =
+    currencyChoices[
+      (currencyChoices.indexOf(currency) + 1) % currencyChoices.length
+    ];
   const [extraMembers, setExtraMembers] = useState<Member[]>([]);
   const [adding, setAdding] = useState<"payer" | "share" | null>(null);
   const members = useMemo(() => {
@@ -175,21 +191,15 @@ export function ExpenseEditor({
           <button
             type="button"
             className="expense-currency-choice"
-            disabled={
-              locked || busy || data.trip.currency === data.trip.home_currency
-            }
-            aria-label={`当前币种：${currencyLabel(currency)}${data.trip.currency !== data.trip.home_currency ? `，切换为${currencyLabel(currency === data.trip.currency ? data.trip.home_currency : data.trip.currency)}` : ""}`}
+            disabled={locked || busy || !canSwitchCurrency}
+            aria-label={`当前币种：${currencyLabel(currency)}${canSwitchCurrency ? `，切换为${currencyLabel(nextCurrency)}` : ""}`}
             onClick={() => {
-              setCurrency(
-                currency === data.trip.currency
-                  ? data.trip.home_currency
-                  : data.trip.currency,
-              );
+              setCurrency(nextCurrency);
               setEstimate("");
             }}
           >
             {currencyLabel(currency)}
-            {data.trip.currency !== data.trip.home_currency && (
+            {canSwitchCurrency && (
               <ArrowRightLeft size={15} aria-hidden="true" />
             )}
           </button>
